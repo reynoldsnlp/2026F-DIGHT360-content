@@ -30,7 +30,7 @@ it into your script. Open it and read it in:
 ```python
 from pathlib import Path
 
-TEXT = Path("dh_listserv_digest.txt").read_text(encoding="utf-8")
+TEXT = Path("content/regex/data/dh_listserv_digest.txt").read_text(encoding="utf-8")
 ```
 
 Put the file next to `extract.py`, or give the full path to wherever you saved

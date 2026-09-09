@@ -80,11 +80,12 @@ DEBUGGING IT IN VS CODE
 
 """
 
-import json
-import re
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field
+import json
 from pathlib import Path
+import re
 
 import requests
 from rich.console import Console
