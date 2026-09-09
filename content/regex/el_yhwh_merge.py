@@ -1,10 +1,3 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = [
-#     "requests>=2.32",
-#     "rich>=13.7",
-# ]
-# ///
 """Map the El/Yahweh seam in Genesis with regular expressions.
 
 THE QUESTION
@@ -30,13 +23,19 @@ THE SCHOLARLY ANGLE
     Genesis 2:4 flips to "the LORD God" mid-sentence. That flip is the seam.
 
 RUNNING IT
-    uv run --script el_yhwh_merge.py
+    uv run content/regex/el_yhwh_merge.py
+
+    The dependencies (requests, rich) are declared in the repository's
+    pyproject.toml, so this file needs no inline metadata of its own: `uv run`
+    syncs the shared project environment first, then runs the script in it.
 
 DEBUGGING IT IN VS CODE
-    First create the environment uv would use, and point VS Code at it:
+    First create the project environment, and point VS Code at it:
 
-        uv sync --script el_yhwh_merge.py
-        uv python find --script el_yhwh_merge.py   # paste into "Python: Select Interpreter"
+        uv sync            # builds ./.venv from pyproject.toml + uv.lock
+
+    Then run "Python: Select Interpreter" and choose ./.venv/bin/python. VS Code
+    usually detects ./.venv on its own; pick it by hand if it does not.
 
     Then press F5 ("Python Debugger: Debug Python File"). A suggested itinerary,
     each stop marked in the code below with a BREAKPOINT comment:
