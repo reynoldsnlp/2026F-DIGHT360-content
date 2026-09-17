@@ -34,7 +34,7 @@ NARRATIVE = {"Matthew", "Mark", "Luke", "John", "Acts"}
 # rather over-flag a narrative verse than miss one. This single number decides
 # which model wins -- change it and see, as the last block explains. beta=1 weights
 # precision and recall equally. beta=0.5 weights precision twice as much as recall.
-BETA = 2
+BETA = 1
 SCORING = {
     "precision": "precision",
     "recall": "recall",
