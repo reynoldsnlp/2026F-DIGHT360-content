@@ -4,8 +4,9 @@
 
 The whole shape of a supervised experiment, start to finish: load the features,
 hold out a test set, compare three models by cross-validation on the *training*
-set, score the winner exactly once on the test set, and check it against the
-dumbest possible answer.
+set, score the winner exactly once on the test set, check it against the
+dumbest possible answer, look at the mistakes it made, and ask which of your
+features it was actually using.
 
 Nothing here knows a word of the New Testament. It only sees the numbers you
 chose to compute -- which is the thing worth arguing about afterward.
@@ -16,8 +17,16 @@ from pathlib import Path
 
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import RFECV
+from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import fbeta_score, make_scorer, precision_score, recall_score
+from sklearn.metrics import (
+    confusion_matrix,
+    fbeta_score,
+    make_scorer,
+    precision_score,
+    recall_score,
+)
 from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -51,6 +60,19 @@ MODELS = {
 }
 
 ROW = "{:<22}{:>11}{:>9}{:>7}"
+
+
+def importances(model):
+    """One number per feature, wherever this model happens to keep them.
+
+    Logistic regression stores signed weights in .coef_; the trees store
+    non-negative .feature_importances_ that sum to 1. Pipelines store neither,
+    so reach past the scaler to the classifier at the end (model[-1]).
+    """
+    final = model[-1] if hasattr(model, "steps") else model
+    if hasattr(final, "coef_"):
+        return final.coef_[0]
+    return final.feature_importances_
 
 
 def main() -> None:
@@ -116,6 +138,64 @@ def main() -> None:
         f"{recall_score(y_test, always):.3f}",
         f"{fbeta_score(y_test, always, beta=BETA):.3f}",
     ))
+
+    # 6. The confusion matrix: the four raw counts every score above is built
+    #    from. Rows are the truth, columns are the guess, and the diagonal is
+    #    what went right. Read precision down the "said narrative" column (of
+    #    the verses it flagged, how many deserved it) and recall across the
+    #    "actually narrative" row (of the verses that deserved it, how many did
+    #    it flag). Two ways to be wrong, and they are not the same mistake.
+    print("\nconfusion matrix (held-out test)")
+    print(pd.DataFrame(
+        confusion_matrix(y_test, predicted),
+        index=["actually epistle", "actually narrative"],
+        columns=["said epistle", "said narrative"],
+    ))
+
+    # 7. Which features earned their keep? Three answers, because no single one
+    #    is trustworthy alone:
+    #
+    #    model weight -- what the fitted model says about itself. Free, but
+    #      only comparable within one model (signed log-odds for logistic
+    #      regression, impurity drops for the trees) and famously generous to
+    #      features with many distinct values, like n_tokens.
+    #
+    #    shuffle drop -- permutation importance: shuffle one column of the TEST
+    #      set, predict again, see how far the score falls; repeat 10x and
+    #      average. A feature the model leans on hurts when scrambled. Near
+    #      zero means the model was ignoring it. Negative means shuffling
+    #      *helped* -- that column was noise the model was chasing.
+    #
+    #    RFE rank -- recursive feature elimination: fit, drop the weakest
+    #      feature, refit, repeat, cross-validating each subset to find the
+    #      size that scores best. Rank 1 = made the final cut.
+    fitted = MODELS[best]  # already fit on all of train back in step 4
+    shuffled = permutation_importance(
+        fitted, X_test, y_test, scoring=SCORING["fbeta"],
+        n_repeats=10, random_state=RANDOM_SEED,
+    )
+    rfe = RFECV(  # clones the winner and refits it from scratch, subset by subset
+        fitted, cv=5, scoring=SCORING["fbeta"], importance_getter=importances,
+    ).fit(X_train, y_train)
+    report = pd.DataFrame({
+        "model weight": importances(fitted),
+        f"F{BETA:g} shuffle drop": shuffled.importances_mean,
+        "RFE rank": rfe.ranking_,
+    }, index=X.columns)
+    print(f"\nfeature evaluation for {best}")
+    print(report.sort_values(f"F{BETA:g} shuffle drop", ascending=False))
+    print(f"RFE keeps {rfe.n_features_} of {X.shape[1]}: "
+          f"{', '.join(X.columns[rfe.support_])}")
+
+    # Two warnings before you act on that table. First, the columns can
+    # disagree: set BETA=0.5 and the decision tree wins, and it spends a real
+    # share of its weight on n_tokens while that column's shuffle drop sits at
+    # or below zero. The tree kept splitting on verse length and gained nothing
+    # by it. Believe the shuffle -- it is measured on data the model never saw.
+    # Second, both measures split the credit between features that say the same
+    # thing: near-duplicate columns each look useless, because shuffling one
+    # leaves the other to cover for it. A feature scoring zero is either dead
+    # weight or a twin, and the fix is different -- check before you delete it.
 
 
 if __name__ == "__main__":
