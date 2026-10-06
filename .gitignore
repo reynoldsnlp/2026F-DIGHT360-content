@@ -220,3 +220,4 @@ __marimo__/
 # Instructor notes -- discussion prompts, answer keys, anything not distributed
 # to students. Kept beside the assignment it belongs to, out of the repo.
 *_discussion.md
+*_solution.py

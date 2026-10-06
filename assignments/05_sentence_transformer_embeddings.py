@@ -67,14 +67,33 @@ def cosine(a, b) -> float:
     raise NotImplementedError("Copy cosine() from your Assignment 4 script.")
 
 
-def spacy_vectors(texts: list) -> list:
+def spacy_vectors(docs: list) -> list:
     """Assignment 4's answer: average the word vectors, skipping stop words.
 
-    Copy in whichever version of verse_vector() you ended up preferring last
-    week, and say in a comment which one you used -- the comparison at the end
-    means something different depending on your choice.
+    Stop-word-filtered version -- the one that put Matthew 4:16 on
+    top and left Matthew 5:13 down at 198th. If you preferred plain doc.vector
+    last week, replace the body with
+
+        return [doc.vector for doc in docs]
+
+    and every number in the spaCy column moves. Try it once; it is one line and
+    it changes the argument you are going to make.
     """
-    raise NotImplementedError("Copy verse_vector() from your Assignment 4 script.")
+    vectors = []
+    for doc in docs:
+        tokens = [
+            token
+            for token in doc
+            if token.has_vector
+            and not token.is_stop
+            and not token.is_punct
+            and not token.is_space
+        ]
+        if not tokens:
+            vectors.append(doc.vector)  # nothing left to average; fall back
+        else:
+            vectors.append(sum(token.vector for token in tokens) / len(tokens))
+    return vectors
 
 
 def transformer_vectors(texts: list) -> list:
@@ -126,13 +145,15 @@ def report(label: str, scored: list, verses: list) -> None:
 
 
 def main() -> None:
+    nlp = spacy.load(SPACY_MODEL)
     verses = list(iter_verses(load_scriptures(), BOOK))
     texts = [text for _reference, text in verses]
+    spacy_docs = list(nlp.pipe(texts, disable=nlp.pipe_names))
     target_index = [reference for reference, _text in verses].index(TARGET)
     print(f"Read {len(verses)} verses from {BOOK}.")
     print(f"Target -- {TARGET}: {verses[target_index][1]}")
 
-    spacy_ranked = rank(target_index, spacy_vectors(texts), verses)
+    spacy_ranked = rank(target_index, spacy_vectors(spacy_docs), verses)
     transformer_ranked = rank(target_index, transformer_vectors(texts), verses)
 
     report("spaCy: average of static word vectors", spacy_ranked, verses)
