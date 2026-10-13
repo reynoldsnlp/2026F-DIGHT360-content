@@ -143,7 +143,7 @@ When complete, you should have **80 files** in the `scrape/` directory. With a
 ## 6. Style and Ethics Requirements
 
 - Follow ethical scraping practices: pause `1` or `2` seconds between
-  requests, and never request the same page twice.
+  requests, and never request the same page twice. Import `time` and use `time.sleep(1)`.
 - Follow PEP 8 and keep your code readable.
 
 ## 7. Submission Checklist
