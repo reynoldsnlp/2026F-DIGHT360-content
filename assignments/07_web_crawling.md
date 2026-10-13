@@ -71,6 +71,8 @@ doc = JustHTML(html_text, sanitize=False)
 
 for link in doc.query("a[href]"):  # CSS selector: <a> tags with an href
     href = link.attrs["href"]
+    # the next two lines demonstrate how to use urlparse, but you can use
+    # any method you want to inspect the url (e.g. re or in)
     url = urlparse(href)
     print(url.netloc, url.path, Path(url.path).name)
 ```
