@@ -65,6 +65,17 @@ download, `justhtml` to parse, and the standard library (`json`, `pathlib`,
   second after each request. If a page is already saved, read it from disk
   instead of downloading it again. Your second run should send no requests at
   all.
+- **Identify your scraper.** By default, `requests` tells every site it is
+  `python-requests/2.x`, and this site blocks that name with a "please enable
+  cookies" page. Send a `User-Agent` header that says who you are instead:
+
+  ```python
+  HEADERS = {"User-Agent": "DIGHT360 class project"}
+  response = requests.get(url, headers=HEADERS, timeout=30)
+  ```
+
+  Do **not** pretend to be a web browser. Saying honestly who you are lets the
+  site decide whether to allow you.
 - **Request each recipe once.** Some recipes are linked more than once on the
   category page.
 - **Write functions that each do one job**, for example one to get a page, one
