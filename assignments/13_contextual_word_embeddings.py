@@ -60,7 +60,7 @@ SENSE_COLORS = ["#0072B2", "#D55E00", "#009E73", "#CC79A7"]  # colorblind-safe
 tokenizer = AutoTokenizer.from_pretrained(MODEL)
 # Return every layer's output, not just the last one.
 model = AutoModel.from_pretrained(MODEL, output_hidden_states=True)
-model.eval()  # ADD COMMENT
+model.eval()  # Signal that we are NOT training (disable "dropout" and fix batch normalization)
 
 
 def find_target(marked: str) -> tuple[str, int, int]:
